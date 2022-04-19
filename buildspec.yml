@@ -15,7 +15,6 @@ phases:
       - cd ./build/libs
       - pwd
       - ls -l
-      - aws s3 cp hello-world-gradle.jar s3://pdf-pw-remover-test
   post_build:
     commands:
       - echo Build completed on `date`
