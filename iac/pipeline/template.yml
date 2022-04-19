@@ -1,0 +1,618 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+Metadata:
+  "AWS::CloudFormation::Interface":
+    ParameterGroups:
+      - Label:
+          default: Required Tags
+        Parameters:
+          - Blockcode
+          - CostCenter
+          - UniqueID
+          - DataClassification
+          - SupportGroup
+          - ChangeGroup
+          - DrTier
+          - PciIndicator
+          - PhiIndicator
+          - SoxIndicator
+          - CuiIndicator
+      - Label:
+          default: Application Configurations
+        Parameters:
+          - PrefixLabel
+          - Environment
+      - Label:
+          default: Git Details
+        Parameters:
+          - GitPullSubnet
+          - GitPullVpc
+          - SecurityGroup
+          - CodeBaseBranch
+          - CodeBaseGitUrl
+          - CodeBaseContextPath
+          - SourceActionVersion
+          - SourceActionProvider
+          - CodeBaseAccessTokenUserName
+          - CodeBaseAccessTokenPassword
+          - GitWebHookIpAddress
+
+      - Label:
+          default: Pipeline and Code Build
+        Parameters:
+          - CodePipelineName
+          - PipelineRoleName
+          - PprmrCodePipelinePolicyName
+          - PprmrSecretName
+          - CodeBuildServiceRoleName
+          - PprmrCodeBuildPolicyName
+          - ArtifactStoreBucket
+          - CodeArtifactBucket
+          - CodeArtifactName
+          - ApiPolicyName
+          - ApiRoleName
+Parameters:
+  # Prompt for Blockcode
+  Blockcode:
+    Type: String
+    Description: Enter the block code for the Application
+    AllowedPattern: ^[A-Z]{10}$
+    Default: TOPEGDRPPO
+
+  # Prompt for CostCenter
+  CostCenter:
+    Type: String
+    Description: Enter the cost center for the Application
+    AllowedPattern: ^C[0-9]{4}ATG$
+    Default: C8730ATG
+
+  # Prompt for UniqueID
+  UniqueID:
+    Type: String
+    Description: Enter the unique id for the Application
+    AllowedPattern: ^(D|A)[0-9]{7}$
+    Default: D0021372
+
+  # Prompt for DataClassification
+  DataClassification:
+    Type: String
+    Description: Enter the data classification for the Application
+    AllowedValues:
+      - public
+      - internal
+      - confidential
+      - restricted
+    Default: confidential
+
+  # Prompt for cuiIndicator
+  CuiIndicator:
+    Type: String
+    Description: Refers to the category of unclassified information within the U.S. Federal government. Confidential.
+    AllowedValues: [true, false]
+    Default: false
+
+  # Prompt for pciIndicator
+  PciIndicator:
+    Type: String
+    Description: Refers to the category used for credit cardholder data and sensitive authentication data.
+    AllowedValues: [true, false]
+    Default: false
+
+  # Prompt for phiIndicator
+  PhiIndicator:
+    Type: String
+    Description: Refers to any health information (medical and insurance) related to an individual.
+    AllowedValues: [true, false]
+    Default: false
+
+  # Prompt for soxIndicator
+  SoxIndicator:
+    Type: String
+    Description: Refers to any information that has a direct and material impact on Delta's financial reporting.
+    AllowedValues: [true, false]
+    Default: false
+
+  # Prompt for DrTier
+  DrTier:
+    Type: String
+    Description: A tier designation, which defines the chronological order of recovery for an application during an IT Disaster event
+    AllowedValues:
+      - mission vital
+      - mission critical
+      - business critical
+      - business essential
+      - business
+    Default: business essential
+
+  # Prompt for SupportGroup
+  SupportGroup:
+    Type: String
+    Description: Enter the support group for the Application
+    AllowedPattern: ^[A-Za-z0-9_ -]+$
+    Default: DN - MEMDS2
+
+  # Prompt for ChangeGroup
+  ChangeGroup:
+    Type: String
+    Description: Enter the change group for the Application
+    AllowedPattern: ^[A-Za-z0-9_ -]+$
+    Default: DN - MEMDS2
+
+  PrefixLabel:
+    Description: Prefix label to be used creating resources
+    Type: String
+    Default: "techops-eng-dev2-pprmr"
+    AllowedPattern: ^techops-eng[-](dev2|dev|si|prd)[-](.*?)$
+
+  Environment:
+    Description: Environment to deploy.
+    Type: String
+    Default: dev2
+    AllowedValues: ["dev2", "dev", "si", "prod"]
+    ConstraintDescription: Must specify dev, si or prod.
+
+  GitPullSubnet:
+    Description: The subnet that the CodePipeline and CodeBuild will be deployed in. These are private subnet and your source control should be accessible from this subnet. Atleast 2 subnets needs to be selected
+    Type: "List<AWS::EC2::Subnet::Id>"
+  GitPullVpc:
+    Description: The VPC you want to deploy the CodePipeline and CodeBuild into. Select the default one
+    Type: "AWS::EC2::VPC::Id"
+    Default: ""
+  SecurityGroup:
+    Description: Security which got created at the time of gitlab custom source integration to provide access to gitlab source code. Select security group starts with "git-custom-source-****"
+    Type: "List<AWS::EC2::SecurityGroup::Id>"
+    Default: ""
+  CodeBaseBranch:
+    Description: "The branch you want to clone as part of the CodePipeline"
+    Type: String
+    Default: "development"
+  CodeBaseGitUrl:
+    Description: Example is git.delta.com/techops/eng/topegdrppo/pdf-pw-remover-lambda.git (Do not use https://)
+    Type: String
+    Default: git.delta.com/techops/eng/topegdrppo/pdf-pw-remover-lambda.git
+  CodeBaseContextPath:
+    Description: If the project is in a sub directory, provide the context path (ex... ./src)
+    Type: String
+    Default: "./"
+  SourceActionVersion:
+    Description: The version of the custom source action to use.
+    Type: String
+    Default: "1"
+  SourceActionProvider:
+    Description: The provider name of the custom source action.
+    Type: String
+    Default: "DeltaGitLab"
+  CodePipelineName:
+    Description: Name for CodePipeline. A good pattern is GitLab Group followed by Git repo name. ex=ccoe.my-project-name
+    Type: String
+    Default: "pdf-pw-rmr-lambda"
+  CodeBaseAccessTokenUserName:
+    Description: The access token for the CodeBase repo.
+    Type: String
+    NoEcho: "true"
+  CodeBaseAccessTokenPassword:
+    Description: The access token for the CodeBase repo.
+    Type: String
+    NoEcho: "true"
+  GitWebHookIpAddress:
+    Description: Git WebHook source IP address.
+    Type: String
+    Default: "205.174.22.25/32"
+  CodeBuildServiceRoleName:
+    Description: The role name for the code build service, must start with 'delegate-admin'
+    Type: String
+    Default: delegate-admin-techops-eng-dev2-pprmr-codebuild-role
+  PipelineRoleName:
+    Description: Name for the PipelineRole, must start with 'delegate-admin'
+    Type: String
+    Default: delegate-admin-techops-eng-dev2-pprmr-codepipeline-role
+  ArtifactStoreBucket:
+    Description: S3 bucket name for SPA UI code for 3rd party git integration
+    Type: String
+    Default: gitlab-custom-source-artifactstore
+    # Will be passed as env variables to codebuild
+    ##S3 Bucket
+  CodeArtifactBucket:
+    Type: String
+    Default: "techops-eng-dev2-pprmr-lambda-code-s3"
+    Description: "S3 bucket to host lambda function jar"
+    AllowedPattern: ^techops-eng[-](dev2|dev|si|prd)[-](.*?)[-]s3$
+    ConstraintDescription: Bucket names must be lowercase, start and end with a letter or number, and be between 3 and 63 characters in length.
+  CodeArtifactName:
+    Description: Name of the code artifact zip file
+    Type: String
+    Default: pdf-password-remover-lambda.jar.zip
+
+  PprmrSecretName:
+    Description: Name for Secret resource to hold GIT creds
+    Type: String
+    Default: techops-eng-dev2-pprmr-secret
+    AllowedPattern: ^techops-eng[-](dev2|dev|si|prd)[-](.*?)[-]secret$
+
+  PprmrCodePipelinePolicyName:
+    Description: Name for Code Pipeline Policy
+    Type: String
+    Default: delegate-admin-techops-eng-dev2-pprmr-codepipeline-policy
+    AllowedPattern: ^delegate-admin-techops-eng[-](dev2|dev|si|prd)[-](.*?)[-]policy$
+
+  PprmrCodeBuildPolicyName:
+    Description: Name for Code Pipeline Policy
+    Type: String
+    Default: delegate-admin-techops-eng-dev2-pprmr-codebuild-policy
+    AllowedPattern: ^delegate-admin-techops-eng[-](dev2|dev|si|prd)[-](.*?)[-]policy$
+
+Resources:
+  #S3 Bucket for lamnbda func
+  LambdaCodeBucketName:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref CodeArtifactBucket
+
+      Tags:
+        - Key: costCenter
+          Value: !Ref CostCenter
+        - Key: uniqueID
+          Value: !Ref UniqueID
+        - Key: dataClassification
+          Value: !Ref DataClassification
+        - Key: supportGroup
+          Value: !Ref SupportGroup
+        - Key: changeGroup
+          Value: !Ref ChangeGroup
+        - Key: blockcode
+          Value: !Ref Blockcode
+        - Key: drTier
+          Value: !Ref DrTier
+        - Key: pciIndicator
+          Value: !Ref PciIndicator
+        - Key: phiIndicator
+          Value: !Ref PhiIndicator
+        - Key: soxIndicator
+          Value: !Ref SoxIndicator
+        - Key: cuiIndicator
+          Value: !Ref CuiIndicator
+
+  CodeBaseAccessTokenSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Ref PprmrSecretName
+      Description: The user and access token for the Build Spec project
+      SecretString: !Sub "${CodeBaseAccessTokenUserName}:${CodeBaseAccessTokenPassword}"
+      Tags:
+        - Key: costCenter
+          Value: !Ref CostCenter
+        - Key: uniqueID
+          Value: !Ref UniqueID
+        - Key: dataClassification
+          Value: !Ref DataClassification
+        - Key: supportGroup
+          Value: !Ref SupportGroup
+        - Key: changeGroup
+          Value: !Ref ChangeGroup
+        - Key: blockcode
+          Value: !Ref Blockcode
+        - Key: drTier
+          Value: !Ref DrTier
+        - Key: pciIndicator
+          Value: !Ref PciIndicator
+        - Key: phiIndicator
+          Value: !Ref PhiIndicator
+        - Key: soxIndicator
+          Value: !Ref SoxIndicator
+        - Key: cuiIndicator
+          Value: !Ref CuiIndicator
+
+  CodePipelinePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Ref PprmrCodePipelinePolicyName
+      Roles:
+        - !Ref PipelineRoleName
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - s3:GetObject
+              - s3:ListBucket
+              - s3:GetObjectVersion
+              - s3:GetBucketVersioning
+              - s3:PutObject
+              - s3:SetBucketEncryption
+            Effect: Allow
+            Resource:
+              - Fn::Sub: arn:aws:s3:::${ArtifactStoreBucket}-${AWS::AccountId}
+              - Fn::Sub: arn:aws:s3:::${ArtifactStoreBucket}-${AWS::AccountId}/*
+          - Action:
+              - s3:GetObject
+              - s3:ListBucket
+              - s3:GetObjectVersion
+              - s3:GetBucketVersioning
+              - s3:PutBucketPolicy
+            Effect: Allow
+            Resource:
+              - Fn::Sub: arn:aws:s3:::${CodeArtifactBucket}
+              - Fn::Sub: arn:aws:s3:::${CodeArtifactBucket}/*
+          - Action:
+              - s3:GetObject
+            Effect: Allow
+            Resource:
+              - Fn::Sub: arn:aws:s3:::*
+          - Action:
+              - codebuild:StartBuild
+              - codebuild:BatchGetBuilds
+            Effect: Allow
+            Resource:
+              - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${AWS::StackName}*"
+          - Action:
+              - "cloudformation:*"
+            Effect: Allow
+            Resource: "*"
+
+  CodeBuildPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Ref PprmrCodeBuildPolicyName
+      Roles:
+        - !Ref CodeBuildServiceRoleName
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - s3:GetObject
+              - s3:ListBucket
+              - s3:GetObjectVersion
+              - s3:GetBucketVersioning
+              - s3:PutObject
+              - s3:CreateBucket
+              - s3:PutBucketTagging
+            Effect: Allow
+            Resource:
+              - Fn::Sub: arn:aws:s3:::${ArtifactStoreBucket}-${AWS::AccountId}
+              - Fn::Sub: arn:aws:s3:::${ArtifactStoreBucket}-${AWS::AccountId}/*
+          - Action:
+              - s3:GetObject
+              - s3:ListBucket
+              - s3:GetObjectVersion
+              - s3:GetBucketVersioning
+              - s3:PutBucketPolicy
+            Effect: Allow
+            Resource:
+              - Fn::Sub: arn:aws:s3:::${ArtifactStoreBucket}
+              - Fn::Sub: arn:aws:s3:::${ArtifactStoreBucket}/*
+          - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogGroups
+            Effect: Allow
+            Resource:
+              - "*"
+          - Action:
+              - iam:GetRole
+              - iam:CreateRole
+              - iam:DetachRolePolicy
+              - iam:DeleteRolePolicy
+              - iam:AttachRolePolicy
+              - iam:PutRolePolicy
+              - iam:PassRole
+            Effect: Allow
+            Resource:
+              - "*"
+          - Action:
+              - secretsmanager:CreateSecret
+            Effect: Allow
+            Resource:
+              - "*"
+          - Action:
+              - cloudformation:*
+            Effect: Allow
+            Resource:
+              - "*"
+
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Type: S3
+        Location: !Sub ${ArtifactStoreBucket}-${AWS::AccountId}
+        EncryptionKey:
+          Id: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/gitlab-codepipeline-cmk"
+          Type: KMS
+      Name: !Sub ${PrefixLabel}-${CodePipelineName}
+      RestartExecutionOnUpdate: true
+      RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${PipelineRoleName}"
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: CloneRepository
+              ActionTypeId:
+                Category: Source
+                Owner: Custom
+                Version: !Ref SourceActionVersion
+                Provider: !Ref SourceActionProvider
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                Branch: !Ref CodeBaseBranch
+                GitUrl: !Ref CodeBaseGitUrl
+                ContextPath: !Ref CodeBaseContextPath
+                PipelineName: !Sub ${PrefixLabel}-${CodePipelineName}
+                AccessTokenSecretKeyName: !Ref CodeBaseAccessTokenSecret
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: CodeBuild
+              InputArtifacts:
+                - Name: SourceOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: "1"
+                Provider: CodeBuild
+              OutputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                ProjectName: !Sub "${AWS::StackName}-BuildProject"
+                EnvironmentVariables: !Sub '[{"name":"SOURCE_BUCKET","value":"${ArtifactStoreBucket}-${AWS::AccountId}","type":"PLAINTEXT"}]'
+              RunOrder: 1
+        - Name: Prod
+          Actions:
+            - Name: Deploy
+              InputArtifacts:
+                - Name: BuildOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: "1"
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref DeployProject
+              RunOrder: 1
+      Tags:
+        - Key: costCenter
+          Value: !Ref CostCenter
+        - Key: uniqueID
+          Value: !Ref UniqueID
+        - Key: dataClassification
+          Value: !Ref DataClassification
+        - Key: supportGroup
+          Value: !Ref SupportGroup
+        - Key: changeGroup
+          Value: !Ref ChangeGroup
+        - Key: blockcode
+          Value: !Ref Blockcode
+        - Key: drTier
+          Value: !Ref DrTier
+        - Key: pciIndicator
+          Value: !Ref PciIndicator
+        - Key: phiIndicator
+          Value: !Ref PhiIndicator
+        - Key: soxIndicator
+          Value: !Ref SoxIndicator
+        - Key: cuiIndicator
+          Value: !Ref CuiIndicator
+
+  CodeBasePipelineWebhook:
+    Type: "AWS::CodePipeline::Webhook"
+    Properties:
+      Name: !Sub ${PrefixLabel}-CodeBasePipelineWebhook
+      TargetPipeline: !Sub ${PrefixLabel}-${CodePipelineName}
+      TargetPipelineVersion: 1
+      TargetAction: Source
+      Filters:
+        - JsonPath: "$.ref"
+          MatchEquals: "refs/heads/{CodeBaseBranch}"
+      Authentication: IP
+      AuthenticationConfiguration:
+        AllowedIPRange: !Ref GitWebHookIpAddress
+      RegisterWithThirdParty: false
+
+  BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      VpcConfig:
+        VpcId: !Ref GitPullVpc
+        SecurityGroupIds: !Ref SecurityGroup
+        Subnets: !Ref GitPullSubnet
+      Name: !Sub ${AWS::StackName}-BuildProject
+      ServiceRole: !Sub "arn:aws:iam::${AWS::AccountId}:role/${CodeBuildServiceRoleName}"
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: "LINUX_CONTAINER"
+        ComputeType: "BUILD_GENERAL1_SMALL"
+        Image: "aws/codebuild/standard:3.0"
+        EnvironmentVariables:
+          - Name: CODE_ARTIFACT_BUCKET
+            Value: !Ref CodeArtifactBucket
+          - Name: CODE_ARTIFACT_NAME
+            Value: !Ref CodeArtifactName
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      TimeoutInMinutes: 5
+
+  DeployProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      VpcConfig:
+        VpcId: !Ref GitPullVpc
+        SecurityGroupIds: !Ref SecurityGroup
+        Subnets: !Ref GitPullSubnet
+      Name: !Sub ${AWS::StackName}-DeployProject
+      ServiceRole: !Sub "arn:aws:iam::${AWS::AccountId}:role/${CodeBuildServiceRoleName}"
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: "LINUX_CONTAINER"
+        ComputeType: "BUILD_GENERAL1_SMALL"
+        Image: "aws/codebuild/standard:3.0"
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: deployspec.yml
+      TimeoutInMinutes: 5
+
+  # CloudFormationServiceRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     RoleName: !Sub delegate-admin-${PrefixLabel}-cft-role
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service:
+  #               - cloudformation.amazonaws.com
+  #           Action:
+  #             - sts:AssumeRole
+  #     Path: /
+  #     ManagedPolicyArns:
+  #       - !Sub arn:aws:iam::${AWS::AccountId}:policy/cft-developer-iam-access-policy
+  #     PermissionsBoundary: !Sub arn:aws:iam::${AWS::AccountId}:policy/cft-developer-boundary-policy
+  #     Policies:
+  #       - PolicyName: delegate-admin-CloudFormationPolicy-Inline
+  #         PolicyDocument:
+  #           Version: 2012-10-17
+  #           Statement:
+  #             - Effect: Allow
+  #               Action:
+  #                 - s3:GetObject
+  #                 - s3:ListBucket
+  #                 - s3:GetObjectVersion
+  #                 - s3:GetBucketVersioning
+  #                 - s3:CreateBucket
+  #                 - s3:SetBucketEncryption
+  #               Resource:
+  #                 - "*"
+  #             - Effect: Allow
+  #               Action:
+  #                 - s3:GetObject
+  #                 - s3:ListBucket
+  #               Resource:
+  #                 - Fn::Sub: arn:aws:s3:::${ArtifactStoreBucket}-${AWS::AccountId}/*
+  #                 - Fn::Sub: arn:aws:s3:::${CodeArtifactBucket}/*
+  #             - Effect: Allow
+  #               Action:
+  #                 - s3:GetObject
+  #                 - s3:ListBucket
+  #                 - s3:PutBucketPolicy
+  #               Resource:
+  #                 - Fn::Sub: arn:aws:s3:::${SPABucket}/*
+  #             - Effect: Allow
+  #               Action:
+  #                 - iam:GetRole
+  #                 - iam:CreateRole
+  #                 - iam:DeleteRole
+  #                 - iam:PutRolePolicy
+  #                 - iam:AttachRolePolicy
+  #                 - iam:DeleteRolePolicy
+  #                 - iam:DetachRolePolicy
+  #                 - iam:PassRole
+  #                 - iam:GetRole
+  #               Resource:
+  #                 - Fn::Sub: arn:aws:iam::${AWS::AccountId}:role/*
+  #             - Action:
+  #                 - "cloudformation:*"
+  #               Effect: Allow
+  #               Resource: "*"

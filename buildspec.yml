@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto8
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - java -version
+      - ./gradlew clean build
+      - cd ./build/libs
+      - aws s3 cp $CODE_ARTIFACT_NAME s3://$CODE_ARTIFACT_BUCKET
+  post_build:
+    commands:
+      - echo Build completed on `date`
+artifacts:
+  files:
+    - deployspec.yml
+    - $CODE_ARTIFACT_NAME
