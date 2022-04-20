@@ -15,7 +15,7 @@ phases:
       - cd ./build/libs
       - pwd
       - ls -l
-      - aws s3 cp hello-world-gradle.jar s3://techops-eng-test-lambda-bucket-s3-2
+      - aws s3 cp hello-world-gradle.jar s3://examplestack-hellobucket-au4y0l1iuw5x
   post_build:
     commands:
       - echo Build completed on `date`
