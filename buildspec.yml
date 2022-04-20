@@ -22,4 +22,5 @@ phases:
 artifacts:
   files:
     - deployspec.yml
+    - ./build/libs/hello-world-gradle.jar
     - hello-world-gradle.jar
