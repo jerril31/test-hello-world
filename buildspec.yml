@@ -12,10 +12,7 @@ phases:
       - ./gradlew clean build
       - pwd
       - ls -l
-      - cd ./build/libs
-      - pwd
-      - ls -l
-      - aws s3 sync ./ s3://$CODE_ARTIFACT_BUCKET --delete
+      - aws s3 sync ./build/libs s3://$CODE_ARTIFACT_BUCKET --delete
   post_build:
     commands:
       - echo Build completed on `date`
