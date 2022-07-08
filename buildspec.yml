@@ -3,7 +3,7 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      java: corretto8
+      java: openjdk11
 
   build:
     commands:
@@ -15,8 +15,8 @@ phases:
       - cd ./build/libs
       - pwd
       - ls -l
-      - aws s3 cp hello-world-gradle.jar s3://techops-eng-test-lambda-bucket-s3-2
-      - aws s3 sync hello-world-gradle.jar s3://techops-eng-test-lambda-bucket-s3-2
+      - aws s3 cp hello-world-gradle.jar s3://techops-eng-dev-test-spa-bucket
+      - aws s3 sync hello-world-gradle.jar s3://techops-eng-dev-test-spa-bucket
   post_build:
     commands:
       - echo Build completed on `date`
