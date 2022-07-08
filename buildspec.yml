@@ -15,7 +15,7 @@ phases:
       - cd ./build/libs
       - pwd
       - ls -l
-      - aws s3 sync ./hello-world-gradle.jar s3://techops-eng-dev-test-spa-bucket
+      - aws s3 sync ./ s3://techops-eng-dev-test-spa-bucket
   post_build:
     commands:
       - echo Build completed on `date`
